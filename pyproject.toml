@@ -12,6 +12,7 @@ httpx = "^0.25.0"
 python-dotenv = "^1.0.0"
 orjson = "^3.9.7"
 rich = "^13.6.0"
+click = "^8.1.7"
 
 
 [tool.poetry.group.dev.dependencies]
