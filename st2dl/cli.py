@@ -27,14 +27,12 @@ def wkt_to_point(wktstring: str) -> Tuple[float, ...]:
 
 def show_preview_urls(preview_urls: List[dict[str, str]]) -> None:
     table = Table(title="Sentinel-2 Preview Url's")
-    table.add_column("OriginDate", justify="left", style="cyan")
-    table.add_column("Url", justify="left", style="blue")
+    table.add_column("Preview", justify="left", style="blue")
     table.add_column("Name", justify="left", style="magenta")
 
     for entry in preview_urls:
         table.add_row(
-            entry["origindate"],
-            entry["url"].replace("(", "%28").replace(")", "%29"),
+            f'[link={entry["url"].replace("(", "%28").replace(")", "%29")}]{entry["origindate"]}[/link]',
             entry["name"],
         )
 
