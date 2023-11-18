@@ -4,3 +4,4 @@
 **/.pytest_cache
 search_data.json
 .idea
+*.zip
