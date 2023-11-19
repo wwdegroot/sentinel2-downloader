@@ -6,13 +6,15 @@ from rich import print
 import click
 from rich.prompt import Prompt
 from st2dl.auth import get_access_token
-from st2dl.preview import get_preview_download_links
-from st2dl.product import download_products_data
+from st2dl.download.preview import get_preview_download_links
+from st2dl.download.product import download_products_data
 from st2dl.cli import convert_to_timestamp, wkt_to_point, show_preview_urls
+from st2dl.download.search import ESA_SEARCH_URL
 
 
 @click.command()
 @click.argument("pointofinterest", type=click.STRING)
+@click.argument("daterange", type=click.STRING)
 @click.option(
     "--username",
     "-u",
@@ -58,13 +60,14 @@ def main(
     """
     POINTOFINTEREST the point WKT string which is used for the intersect with sentinel 2 data. SRID=4326. Example: "POINT(-9.1372 38.7000)"
 
+    DATERANGE the range of dates comma seperated between which is searched. For example: "11-08-2023 00:00:00,11-09-2023 00:00:00"
     \f
     :param pointofinterest:
     :param max_:
     :param cloud_coverage:
     :return:
     """
-    esa_search_url = r"https://catalogue.dataspace.copernicus.eu/odata/v1/Products"
+
     long, lat = wkt_to_point(pointofinterest)
     print(f"coordinates: lat: {lat:.4f}, long: {long:.4f}")
     print(f"maximum results: {max_}")
@@ -78,7 +81,7 @@ def main(
     search_filter = f"OData.CSC.Intersects(area=geography'SRID=4326;POINT ({long:.4f} {lat:.4f})') and Attributes/OData.CSC.DoubleAttribute/any(att:att/Name eq 'cloudCover' and att/OData.CSC.DoubleAttribute/Value lt {cloud_coverage:.2f}) and Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'productType' and att/OData.CSC.StringAttribute/Value eq 'S2MSI2A') and ContentDate/Start gt {time_gt} and ContentDate/Start lt {time_lt}"
     with httpx.Client() as client:
         r = client.get(
-            url=f"{esa_search_url}?$filter={search_filter}&$top={max_}&$expand=Assets",
+            url=f"{ESA_SEARCH_URL}?$filter={search_filter}&$top={max_}&$expand=Assets",
             timeout=60,
         )
         if not r.status_code == 200:

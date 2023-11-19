@@ -33,7 +33,10 @@ ESA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 def convert_to_timestamp(datestring="", dateformat="%d-%m-%Y %H:%M:%S"):
-    source = datetime.strptime(datestring, dateformat)
+    if len(datestring) > 10:
+        source = datetime.strptime(datestring, dateformat)
+    else:
+        source = datetime.strptime(datestring, "%d-%m-%Y")
     return source.strftime(ESA_DATE_FORMAT)
 
 
