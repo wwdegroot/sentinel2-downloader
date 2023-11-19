@@ -16,6 +16,12 @@ def handle_sigint(signum, frame):
 signal.signal(signal.SIGINT, handle_sigint)
 
 
+# TODO: download the TCI directly.
+#  url template:
+#  https://zipper.dataspace.copernicus.eu/odata/v1/Products(223e039f-990c-42fb-8824-a0264edac49f)/Nodes(S2A_MSIL2A_20230812T112121_N0509_R037_T29SMC_20230812T173903.SAFE)/Nodes(GRANULE)/Nodes(L2A_T29SMC_A042505_20230812T112234)/Nodes(IMG_DATA)/Nodes(R10m)/Nodes(T29SMC_20230812T112121_TCI_10m.jp2)/$value
+#  Guess each node needs to be traversed to get to the 10m tci image
+
+
 def download_data(task_id: TaskID, product_id: str, access_token: str):
     headers = {"Authorization": f"Bearer {access_token}"}
     with httpx.Client() as client:

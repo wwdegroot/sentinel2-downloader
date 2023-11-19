@@ -1,7 +1,7 @@
 import pytest
 import orjson
 from pathlib import Path
-from st2dl.preview import get_preview_download_links
+from st2dl.download.preview import get_preview_download_links
 
 
 @pytest.fixture()

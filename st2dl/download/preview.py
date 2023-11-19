@@ -1,4 +1,13 @@
 from typing import List
+import msgspec
+
+
+class Preview(msgspec.Struct):
+    id: str
+    productid: str
+    url: str
+    origindate: str
+    name: str
 
 
 def get_preview_download_links(search_json) -> List[dict[str, str]]:
