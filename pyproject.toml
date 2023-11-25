@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sentinel2-background"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["wwdegroot <wouter.w.de.groot@gmail.com>"]
 readme = "README.md"
@@ -8,12 +8,13 @@ packages = [{include = "sentinel2_background"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-httpx = "^0.25.0"
+httpx = "^0.25.2"
 python-dotenv = "^1.0.0"
-orjson = "^3.9.7"
-rich = "^13.6.0"
+orjson = "^3.9.10"
+rich = "^13.7.0"
 click = "^8.1.7"
 msgspec = "^0.18.4"
+asyncclick = "^8.1.3.4"
 
 
 [tool.poetry.group.dev.dependencies]
