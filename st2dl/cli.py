@@ -12,8 +12,7 @@ from rich.progress import (
     TimeRemainingColumn,
     TransferSpeedColumn,
 )
-from st2dl.exceptions import InvalidWktPointArgument
-
+from st2dl.exceptions import InvalidWktPointArgument, InvalidDateRangeArgument
 
 progress = Progress(
     TextColumn("[bold blue]{task.fields[filename]}", justify="right"),
@@ -32,12 +31,33 @@ progress = Progress(
 ESA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
-def convert_to_timestamp(datestring="", dateformat="%d-%m-%Y %H:%M:%S"):
+def convert_to_timestamp(datestring="", dateformat="%d-%m-%Y %H:%M:%S") -> str:
     if len(datestring) > 10:
         source = datetime.strptime(datestring, dateformat)
     else:
         source = datetime.strptime(datestring, "%d-%m-%Y")
     return source.strftime(ESA_DATE_FORMAT)
+
+
+def daterange_to_timestamp(daterange: str) -> Tuple[str, str]:
+    if "," not in daterange:
+        raise InvalidDateRangeArgument(
+            f'Give a valid daterange string. for example: "11-08-2023 00:00:00,11-09-2023 00:00:00" \n Daterange received: {daterange}'
+        )
+    gt, lt = daterange.split(",")
+    try:
+        time_gt = convert_to_timestamp(datestring=gt)
+    except ValueError:
+        raise InvalidDateRangeArgument(
+            f"Invalid dateformat encountered for time_gt: {gt}. Dateformat expected: %d-%m-%Y or %d-%m-%Y %H:%M:%S"
+        )
+    try:
+        time_lt = convert_to_timestamp(datestring=lt)
+    except ValueError:
+        raise InvalidDateRangeArgument(
+            f"Invalid dateformat encountered for time_lt: {lt}. Dateformat expected: %d-%m-%Y or %d-%m-%Y %H:%M:%S"
+        )
+    return time_gt, time_lt
 
 
 def wkt_to_point(wktstring: str) -> Tuple[float, ...]:

@@ -8,7 +8,7 @@ from rich.prompt import Prompt
 from st2dl.auth import get_access_token
 from st2dl.download.preview import get_preview_download_links
 from st2dl.download.product import download_products_data
-from st2dl.cli import convert_to_timestamp, wkt_to_point, show_preview_urls
+from st2dl.cli import wkt_to_point, show_preview_urls, daterange_to_timestamp
 from st2dl.download.search import ESA_SEARCH_URL
 
 
@@ -51,6 +51,7 @@ from st2dl.download.search import ESA_SEARCH_URL
 )
 def main(
     pointofinterest: str,
+    daterange: str,
     max_: int,
     cloud_coverage: float,
     username: str,
@@ -69,11 +70,10 @@ def main(
     """
 
     long, lat = wkt_to_point(pointofinterest)
+    time_gt, time_lt = daterange_to_timestamp(daterange)
     print(f"coordinates: lat: {lat:.4f}, long: {long:.4f}")
     print(f"maximum results: {max_}")
     print(f"cloud coverage percentage less then: {cloud_coverage:.2f}")
-    time_gt = convert_to_timestamp(datestring="11-08-2023 00:00:00")
-    time_lt = convert_to_timestamp(datestring="11-09-2023 00:00:00")
     # filter voor zoeken op cloudCover, Productype en orbitDirection.
     # lt = less then
     # eq = equal to
