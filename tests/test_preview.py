@@ -1,20 +1,21 @@
 import pytest
-import orjson
+import msgspec
 from pathlib import Path
-from st2dl.download.preview import get_preview_download_links
+from st2dl.cli import show_preview_urls
+from st2dl.download.search import SearchContent
 
 
 @pytest.fixture()
 def search_result():
     with open(Path(__file__).parent / "data" / "test_search_data.json", "rb") as f:
-        data = orjson.loads(f.read())
+        data = msgspec.json.decode(f.read(), type=SearchContent)
     return data
 
 
 def test_preview_links(search_result):
-    preview_links = get_preview_download_links(search_result)
+    preview_links = show_preview_urls(search_result)
 
-    assert [i["url"] for i in preview_links] == [
+    assert [i.url for i in preview_links] == [
         "https://catalogue.dataspace.copernicus.eu/odata/v1/Assets(a7aa6a3c-4c4a-4a50-be49-fe874669dbc6)/$value",
         "https://catalogue.dataspace.copernicus.eu/odata/v1/Assets(fb43fe4d-a795-4726-ae1a-cdd02376a414)/$value",
         "https://catalogue.dataspace.copernicus.eu/odata/v1/Assets(6d5ae0d3-4989-4e0e-9f13-7cd8012bdaf2)/$value",
