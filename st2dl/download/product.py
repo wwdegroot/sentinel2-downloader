@@ -1,14 +1,14 @@
-from concurrent.futures import ThreadPoolExecutor
 from typing import List
 import signal
 import httpx
 from rich.progress import TaskID, Event
 from st2dl.cli import progress
-
+from st2dl.download.search import SearchResult
 
 done_event = Event()
 
 
+# do it with a live progress: https://github.com/Textualize/rich/blob/master/examples/live_progress.py
 def handle_sigint(signum, frame):
     done_event.set()
 
@@ -16,46 +16,75 @@ def handle_sigint(signum, frame):
 signal.signal(signal.SIGINT, handle_sigint)
 
 
-# TODO: download the TCI directly.
-#  url template:
-#  https://zipper.dataspace.copernicus.eu/odata/v1/Products(223e039f-990c-42fb-8824-a0264edac49f)/Nodes(S2A_MSIL2A_20230812T112121_N0509_R037_T29SMC_20230812T173903.SAFE)/Nodes(GRANULE)/Nodes(L2A_T29SMC_A042505_20230812T112234)/Nodes(IMG_DATA)/Nodes(R10m)/Nodes(T29SMC_20230812T112121_TCI_10m.jp2)/$value
-#  Guess each node needs to be traversed to get to the 10m tci image
-async def download_tci_data(
-    task_id: TaskID, product_id: str, mm_band: str, access_token: str
+async def download_tci_products_data(
+    task_id: TaskID, product: SearchResult, access_token: str, mm_band: str = "R10m"
 ):
     headers = {"Authorization": f"Bearer {access_token}"}
+    progress.start_task(task_id)
     async with httpx.AsyncClient() as client:
         client.headers.update(headers)
-
-
-async def download_data(task_id: TaskID, product_id: str, access_token: str):
-    headers = {"Authorization": f"Bearer {access_token}"}
-    async with httpx.AsyncClient() as client:
-        client.headers.update(headers)
+        # create the tci image url
+        granule_url = f"https://zipper.dataspace.copernicus.eu/odata/v1/Products({product.id})/Nodes({product.name})/Nodes(GRANULE)/Nodes"
+        granule_resp = await client.get(
+            f"{granule_url}", follow_redirects=True, headers=headers
+        )
+        granule_folder = granule_resp.json()
+        img_data_url = f"{granule_url}({granule_folder['result'][0]['Name']})/Nodes(IMG_DATA)/Nodes({mm_band})/Nodes"
+        img_data_resp = await client.get(img_data_url, follow_redirects=True)
+        img_data = img_data_resp.json()
+        tci_name = [img["Name"] for img in img_data["result"] if "TCI" in img["Name"]][
+            0
+        ]
+        tci_url = f"{img_data_url}({tci_name})/$value"
         async with client.stream(
-            "GET",
-            url=f"https://zipper.dataspace.copernicus.eu/odata/v1/Products({product_id})/$value",
+            method="GET",
+            url=tci_url,
             headers=headers,
         ) as response:
             progress.update(task_id, total=int(response.headers["Content-length"]))
-            with open(f"product-{product_id}.zip", "wb") as file:
+            with open(f"{tci_name}", "wb") as file:
                 progress.start_task(task_id)
-                for chunk in response.iter_bytes():
+                async for chunk in response.aiter_bytes():
                     if chunk:
                         file.write(chunk)
                         progress.update(task_id, advance=len(chunk))
                         if done_event.is_set():
                             return
-    progress.console.log(f"Downloaded product-{product_id}.zip")
+        progress.console.log(f"Downloaded {tci_name}")
 
 
-def download_products_data(product_ids: List[str], access_token: str):
+async def download_data(task_id: TaskID, product: SearchResult, access_token: str):
+    headers = {"Authorization": f"Bearer {access_token}"}
+    async with httpx.AsyncClient() as client:
+        client.headers.update(headers)
+        async with client.stream(
+            "GET",
+            url=f"https://zipper.dataspace.copernicus.eu/odata/v1/Products({product.id})/$value",
+            headers=headers,
+        ) as response:
+            progress.update(task_id, total=int(response.headers["Content-length"]))
+            with open(f"product-{product.id}.zip", "wb") as file:
+                progress.start_task(task_id)
+                async for chunk in response.aiter_bytes():
+                    if chunk:
+                        file.write(chunk)
+                        progress.update(task_id, advance=len(chunk))
+                        if done_event.is_set():
+                            return
+    progress.console.log(f"Downloaded product-{product.id}.zip")
+
+
+async def download_products_data(
+    products: List[SearchResult], access_token: str, tci_only: bool = False
+):
     with progress:
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            for product_id in product_ids:
-                task_id = progress.add_task(
-                    f"product-{product_id}",
-                    filename=f"product-{product_id}.zip",
-                    start=False,
-                )
-                pool.submit(download_data, task_id, product_id, access_token)
+        for product in products:
+            task_id = progress.add_task(
+                f"product-{product.id}",
+                filename=f"product-{product.id}.zip",
+                start=False,
+            )
+            if tci_only:
+                await download_tci_products_data(task_id, product, access_token)
+            else:
+                await download_data(task_id, product, access_token)
