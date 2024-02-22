@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 import msgspec
@@ -40,7 +42,7 @@ class SearchResult(msgspec.Struct, rename="pascal"):
 
 class SearchContent(msgspec.Struct):
     value: List[SearchResult]
-    next_link: str = msgspec.field(name="@odata.nextLink")
+    next_link: str | None = msgspec.field(default=None, name="@odata.nextLink")
 
 
 async def search_odata(
