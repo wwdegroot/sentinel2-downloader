@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "sentinel2-background"
+name = "sentinel2-downloader"
 version = "0.2.0"
 description = ""
 authors = ["wwdegroot <wouter.w.de.groot@gmail.com>"]
 readme = "README.md"
-packages = [{include = "sentinel2_background"}]
+packages = [{include = "st2dl"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-httpx = "^0.25.2"
+httpx = "^0.27.0"
 python-dotenv = "^1.0.0"
 orjson = "^3.9.10"
 rich = "^13.7.0"
@@ -18,11 +18,11 @@ asyncclick = "^8.1.3.4"
 
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.2"
-ruff = "^0.1.5"
-pre-commit = "^3.5.0"
-pytest-httpx = "^0.27.0"
-pytest-asyncio = "^0.21.1"
+pytest = "^8.0.0"
+ruff = "^0.2.2"
+pre-commit = "^3.6.0"
+pytest-httpx = "^0.30.0"
+pytest-asyncio = "^0.23.5"
 
 [build-system]
 requires = ["poetry-core"]
