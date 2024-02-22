@@ -5,3 +5,4 @@
 search_data.json
 .idea
 *.zip
+.ruff_cache
