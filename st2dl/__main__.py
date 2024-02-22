@@ -1,3 +1,5 @@
+from typing import List
+
 import msgspec
 from dotenv import load_dotenv
 import asyncio
@@ -5,9 +7,14 @@ from rich import print
 import asyncclick as click
 from rich.prompt import Prompt
 from st2dl.auth import get_access_token
-from st2dl.download.preview import get_preview_download_links
 from st2dl.download.product import download_products_data
-from st2dl.cli import wkt_to_point, show_preview_urls, daterange_to_timestamp
+from st2dl.cli import (
+    wkt_to_point,
+    show_preview_urls,
+    daterange_to_timestamp,
+    Preview,
+    get_selected_products,
+)
 from st2dl.download.search import search_odata
 
 
@@ -44,9 +51,18 @@ from st2dl.download.search import search_odata
 @click.option(
     "--debug",
     default=False,
+    is_flag=True,
     type=click.BOOL,
     show_default=True,
     help="Debug the http requests and extra debug logging",
+)
+@click.option(
+    "--tci",
+    default=False,
+    is_flag=True,
+    type=click.BOOL,
+    show_default=True,
+    help="Download only True Color Image (TCI)",
 )
 async def main(
     pointofinterest: str,
@@ -56,6 +72,7 @@ async def main(
     username: str,
     password: str,
     debug: bool,
+    tci: bool,
 ):
     """
     POINTOFINTEREST the point WKT string which is used for the intersect with sentinel 2 data. SRID=4326. Example: "POINT(-9.1372 38.7000)"
@@ -63,11 +80,13 @@ async def main(
     DATERANGE the range of dates comma seperated between which is searched. For example: "11-08-2023 00:00:00,11-09-2023 00:00:00"
     \f
     :param pointofinterest:
+    :param daterange:
     :param max_:
     :param cloud_coverage:
     :param username:
     :param password:
     :param debug:
+    :param tci:
     :return:
     """
 
@@ -79,23 +98,23 @@ async def main(
 
     search_data = await search_odata(long, lat, cloud_coverage, time_lt, time_gt, max_)
     if debug:
-        with open("../search_data.json", "wb") as f:
+        print("DEBUG: Search request data is saved to disk.")
+        with open("search_data.json", "wb") as f:
             f.write(msgspec.json.encode(search_data))
-    preview_urls = get_preview_download_links(search_data)
-    show_preview_urls(preview_urls)
+    preview_urls: List[Preview] = show_preview_urls(search_data)
     prompt = Prompt()
     preview_download = prompt.ask(
-        "Which preview images id's need to be downloaded, seperate multiple choices by ,",
+        "Which preview images id's need to be downloaded, separate multiple choices by a comma ','",
         # choices=[str(item['id']) for item in preview_urls],
     )
-    download_product_ids = [
-        item["productid"]
-        for item in preview_urls
-        if item["id"] in [n for n in preview_download.split(",")]
-    ]
+    products_to_download = get_selected_products(
+        search_json=search_data, preview_urls=preview_urls, product_ids=preview_download
+    )
     tokens = get_access_token(username, password)
 
-    download_products_data(download_product_ids, tokens.access_token)
+    await download_products_data(
+        products_to_download, tokens.access_token, tci_only=tci
+    )
 
 
 if __name__ == "__main__":
