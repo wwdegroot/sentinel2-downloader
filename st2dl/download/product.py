@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 import signal
 import httpx
@@ -78,6 +79,7 @@ async def download_products_data(
     products: List[SearchResult], access_token: str, tci_only: bool = False
 ):
     with progress:
+        download_tasks = []
         for product in products:
             task_id = progress.add_task(
                 f"product-{product.id}",
@@ -85,6 +87,9 @@ async def download_products_data(
                 start=False,
             )
             if tci_only:
-                await download_tci_products_data(task_id, product, access_token)
+                download_tasks.append(
+                    download_tci_products_data(task_id, product, access_token)
+                )
             else:
-                await download_data(task_id, product, access_token)
+                download_tasks.append(download_data(task_id, product, access_token))
+        await asyncio.gather(*download_tasks)
